@@ -4,6 +4,7 @@ from lixian import XunleiClient, encypt_password
 from lixian_cli_parser import *
 from lixian_tasks import *
 from lixian_config import *
+import lixian_history
 import lixian_help
 import lixian_hash
 import lixian_hash_bt
@@ -122,6 +123,7 @@ def download_single_task(client, download, task, options):
 	no_hash = options.get('no_hash')
 	no_bt_dir = options.get('no_bt_dir')
 	save_torrent_file = options.get('save_torrent_file')
+	ignore_history = options.get('ignore_history')
 
 	assert client.get_gdriveid()
 	if task['status_text'] != 'completed':
@@ -129,22 +131,40 @@ def download_single_task(client, download, task, options):
 			print 'skip task %s as the status is %s' % (task['name'].encode(default_encoding), task['status_text'])
 			return
 	def download1(client, url, path, size):
+
+		
+
 		if not os.path.exists(path):
+			lixian_history.add_history(url,'started','normal')
 			download(client, url, path)
+			lixian_history.add_history(url,'finished','normal')
+
 		elif not resuming:
 			if overwrite:
+				lixian_history.add_history(url,'started','overwrite')
 				download(client, url, path)
+				lixian_history.add_history(url,'finished','overwrite')
+
 			else:
 				raise Exception('%s already exists. Please try --continue or --overwrite' % path)
 		else:
 			assert os.path.getsize(path) <= size, 'existing file bigger than expected, unsafe to continue nor overwrite'
 			if os.path.getsize(path) < size:
+				lixian_history.add_history(url,'started','resuming')
 				download(client, url, path, resuming)
+				lixian_history.add_history(url,'finished','resuming')
+
 			elif os.path.getsize(path) == size:
 				pass
 			else:
 				raise NotImplementedError()
 	def download2(client, url, path, task):
+		if (not ignore_history) and lixian_history.is_finished(url) : 
+			#TODO add configure/option here.
+			#TODO raise Exception or ignore? ignore for now
+			print 'Find finished in history, ignore. - '
+			print path
+			return 
 		size = task['size']
 		if mini_hash and resuming and verify_mini_hash(path, task):
 			return
@@ -259,10 +279,11 @@ def download_multiple_tasks(client, download, tasks, options):
 @command_line_option('hash', default=get_config('hash', True))
 @command_line_option('bt-dir', default=True)
 @command_line_option('save-torrent-file')
+@command_line_option('ignore-history',default=False)
 def download_task(args):
 	import lixian_download_tools
 	download = lixian_download_tools.get_tool(args.tool)
-	download_args = {'output':args.output, 'output_dir':args.output_dir, 'delete':args.delete, 'resuming':args._args['continue'], 'overwrite':args.overwrite, 'mini_hash':args.mini_hash, 'no_hash': not args.hash, 'no_bt_dir': not args.bt_dir, 'save_torrent_file':args.save_torrent_file}
+	download_args = {'output':args.output, 'output_dir':args.output_dir, 'delete':args.delete, 'resuming':args._args['continue'], 'overwrite':args.overwrite, 'mini_hash':args.mini_hash, 'no_hash': not args.hash, 'no_bt_dir': not args.bt_dir, 'save_torrent_file':args.save_torrent_file,'ignore_history':args.ignore_history}
 	client = XunleiClient(args.username, args.password, args.cookies)
 	links = None
 	if len(args) or args.input:
