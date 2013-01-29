@@ -3,11 +3,11 @@ import os
 import os.path
 import lixian_config
 
-
+from datetime import datetime
 
 def add_history(url,action,info):
 	#assert action in ('started','finished')
-	history.append( (url,action,info) )
+	history.append( (url,action,info,datetime.now()) )
 	write_file()
 
 def find_history_url(condition):

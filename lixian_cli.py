@@ -280,7 +280,28 @@ def download_multiple_tasks(client, download, tasks, options):
 @command_line_option('bt-dir', default=True)
 @command_line_option('save-torrent-file')
 @command_line_option('ignore-history',default=False)
+@command_line_option('watch',default=False)
+@command_line_value('watch-interval', default=get_config('watch-interval',3600))
 def download_task(args):
+	from datetime import datetime
+	import time
+	
+	start_time= datetime.now()
+	_do_download(args)
+	end_time=datetime.now()
+	while args.watch:
+		time_run=(end_time-start_time).seconds
+		need_more=int(args.watch_interval) - time_run
+		if  need_more>0:
+			time.sleep(need_more)
+		start_time= datetime.now()
+		_do_download(args)	
+		end_time=datetime.now()
+
+def _do_download(args):
+	from datetime import datetime
+	print('Check and download')
+	print(datetime.now())
 	import lixian_download_tools
 	download = lixian_download_tools.get_tool(args.tool)
 	download_args = {'output':args.output, 'output_dir':args.output_dir, 'delete':args.delete, 'resuming':args._args['continue'], 'overwrite':args.overwrite, 'mini_hash':args.mini_hash, 'no_hash': not args.hash, 'no_bt_dir': not args.bt_dir, 'save_torrent_file':args.save_torrent_file,'ignore_history':args.ignore_history}
@@ -299,7 +320,7 @@ def download_task(args):
 	else:
 		usage(doc=lixian_help.download, message='Not enough arguments')
 
-
+	
 @command_line_parser(help=lixian_help.list)
 @with_parser(parse_login)
 @with_parser(parse_colors)

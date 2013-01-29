@@ -152,7 +152,10 @@ Options:
                                  Default: true.
  --mini-hash                     If the target file already exists, and the file size is complete, do a minimal hash (instead of full hash, which would be much more expensive). This is useful when you are resuming a batch download, in this case the previously downloaded and verified files won't be re-verified.
                                  Default: false.
-
+ --watch						 Keep watching and checking, download when new file available.
+ 								 Default: false.
+ --watch-interval 				 Checking interval, in seconds.
+ 								 Default: 3600 (1 hour)	
 Examples:
  python lixian_cli.py download task-id
  python lixian_cli.py download ed2k-url
